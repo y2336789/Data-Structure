@@ -35,6 +35,7 @@ int main(void)
     element data;			//char를 저장하는 변수 data를 선언
 
     char command;
+    printf("-------2017038068 양영재 -------\n");
 
     do{
         printf("\n-----------------------------------------------------\n");
