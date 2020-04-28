@@ -276,8 +276,15 @@ int deleteLast(headNode* h) {	//마지막 노드를 삭제하는 함수
 		prev = next;
 		next = next->link;
 	}
-	free(next);	//마지막 노드에 도달 하면 next를 삭제
-	prev->link = NULL;
+	if(h->first == next)	//만약에 삭제할 마지막 노드가 리스트의 첫 노드일 경우에는
+	{
+		h->first = NULL;	//h->first가 가르키는 것을 NULL로 해주어서 초기 initialize했던 상태와 같은 상태로 만들어준다.
+		free(next);
+	}
+	else{
+		free(next);	//마지막 노드에 도달 하면 next를 삭제
+		prev->link = NULL;
+	}
 	return 0;
 }
 
