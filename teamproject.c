@@ -8,8 +8,13 @@
 #include <stdlib.h>
 
 #define MAX_VERTEX 20
+#define TRUE 1
+#define FALSE 0
 
-int visited[MAX_VERTEX];
+int visited[MAX_VERTEX]={0,};
+int Svisited[MAX_VERTEX];
+int Qvisited[MAX_VERTEX];
+
 
 //  Stack
 typedef struct _stack
@@ -17,9 +22,6 @@ typedef struct _stack
 	int stackArr[MAX_VERTEX];
 	int top;
 }Stack;
-
-
-
 
 // Queue
 typedef struct _cQueue
@@ -29,6 +31,7 @@ typedef struct _cQueue
 	int queue[MAX_VERTEX];
 }Queue;
 
+// 주어진 자료 구조
 typedef struct Vertex {
 	int num;
 	struct Vertext* link;
@@ -44,11 +47,12 @@ typedef struct Graph {
 
 void createGraph(Graph* aGraph);
 void destroyGraph(Graph* aGraph);
-int insertVertex(Graph* aGraph, int input, int key);
-int deleteVertex(Graph* aGraph, int key);
+void insertVertex(Graph* aGraph, int input);
+void deleteVertex(Graph* aGraph, int key);
 void insertEdge(Graph* aGraph, int fromV, int toV);
 void deleteEdge(Graph* aGraph, int fromV, int toV);
-void depthFS();
+void depthFS(Graph* aGraph, int v);
+void breadthFS(Graph* aGraph, int v);
 void printGraph(Graph* aGraph);
 
 void Stackinit(Stack* pstack);
@@ -62,7 +66,7 @@ int Dequeue(Queue * pq);
 int main(void)
 {
 	char command;
-	int key,row;
+	int key,row,from,to;
 	Graph mygraph;
 
 	do{
@@ -72,51 +76,60 @@ int main(void)
 		printf("----------------------------------------------------------------\n");
 		printf("                   !!! Term-Project !!!                        \n");
 		printf("----------------------------------------------------------------\n");
-		printf(" createGraph       	  = z                                       \n");
-		printf(" Insert Vertex        = i      Destroy Vertex	            = d \n");
-		printf(" Insert Edge    		  = e	    Delete Edge                  = f \n");
-		printf(" DepthFS              = s      BreadthFS                    = b \n");
-		printf(" Print Graph          = p      Quit                         = q \n");
+		printf(" createGraph       	  = z      DestroyGraph       = x \n");
+		printf(" Insert Vertex         = i      Delete Vertex      = d \n");
+		printf(" Insert Edge       	  = e	    Delete Edge        = f \n");
+		printf(" DepthFS       	  = s      BreadthFS       	  = b \n");
+		printf(" Print Graph       	  = p      Quit       	  = q \n");
 		printf("----------------------------------------------------------------\n");
 
 		printf("Command = ");
-		scanf("%c", &command);
+		scanf(" %c", &command);
 
 		switch(command) {
 			case 'z': case 'Z':
 				createGraph(&mygraph);
 				break;
-			case 'q': case 'Q':
-
+			case 'x': case 'X':
+				destroyGraph(&mygraph);
 				break;
 			case 'i': case 'I':
-				printf("Vertex의 값을 입력하시오 : ");
-				scanf("%d", &key);
-				printf("어느 Vertex 근처에 위치 시킬 것인가 입력하시오 : ");
+				printf("몇 번 vertex를 활성화 할 것인지 입력하시오 : ");
 				scanf("%d", &row);
-				insertVertex(&mygraph, row, key);
+				insertVertex(&mygraph, row);
 				break;
 			case 'd': case 'D':
 				printf("Your Key = ");
 				scanf("%d", &key);
-
+				deleteVertex(&mygraph, key);
+				printf("1\n");
 				break;
-
-			case 'r': case 'R':
-
+			case 'e': case 'E':
+				printf("Edge를 추가할 vertex 값을 입력하시오 : ");
+				scanf("%d %d", &from, &to);
+				insertEdge(&mygraph, from, to);
 				break;
-			case 't': case 'T':
-
+			case 'f': case 'F':
+				printf("Edge를 삭제 할 vertex 값을 입력하시오 : ");
+				scanf("%d %d", &from, &to);
+				deleteEdge(&mygraph, from, to);
 				break;
-
-			case 'l': case 'L':
-
+			case 's': case 'S':
+				printf("Your key = ");
+				scanf("%d", &key);
+				depthFS(&mygraph, key);
 				break;
-
+			case 'b': case 'B':
+				printf("Your Key = ");
+				scanf("%d", &key);
+				breadthFS(&mygraph, key);
+				break;
 			case 'p': case 'P':
-				//printStack();
+				printGraph(&mygraph);
 				break;
-
+			case 'q': case 'Q':
+				destroyGraph(&mygraph);
+				break;
 			default:
 				printf("\n       >>>>>   Concentration!!   <<<<<     \n");
 				break;
@@ -130,12 +143,11 @@ int main(void)
 void createGraph(Graph * aGraph)
 {
 	int a=0;
-	VertexHead* nhead = (VertexHead *)malloc(sizeof(VertexHead)* MAX_VERTEX);
-	aGraph->vlist = nhead;
+	aGraph->vlist = (VertexHead *)malloc(sizeof(VertexHead)* MAX_VERTEX);
 
 	for(a; a< MAX_VERTEX; a++)
 	{
-		nhead[a].head = NULL;
+		aGraph->vlist[a].head = NULL;
 	}
 	return;
 }
@@ -143,137 +155,305 @@ void createGraph(Graph * aGraph)
 void destroyGraph(Graph* aGraph)
 {
 	int a=0;
-	Vertex* location = aGraph->vlist->head;
 	Vertex* before;
-
+	Vertex* location;
 	for(a; a< MAX_VERTEX; a++)
 	{
-		deleteVertex(aGraph, a);
+		if(aGraph->vlist[a].head != NULL)
+		{
+			location = aGraph->vlist[a].head->link;
+			while(location != NULL)
+			{
+				before = location;
+				location = location->link;
+				free(before);
+			}
+		}
+		aGraph->vlist[a].head = NULL;
+		visited[a] = 0;
 	}
 	return;
 }
 
-int insertVertex(Graph* aGraph, int input, int key) //input에 있는 숫자는 배열 순서
+void insertVertex(Graph* aGraph, int input) //input에 있는 숫자는 배열 순서
 {
-	Vertex* location = aGraph->vlist[input].head;
-	Vertex* newone = (Vertex *)malloc(sizeof(Vertex));
-	newone->num = key;
-	if(aGraph->vlist[input].head == NULL)	//만약 그래프의 vertexhead가 비어있다면
-	{	//위의 식 대신 location도 됨?
-		aGraph->vlist[input].head = newone;
-		newone->link = NULL;
-		return 1;
-	}
-	//만약 헤드가 어떤 노드를 가리키고 있는 상황이면
-
-	if(location != NULL)
+	if(visited[input] == 0)
 	{
-		location = location->link;	// vlist[input]에서 null을 가리키는 노드가 나올 때 까지 위치를 옮김.
+		visited[input] = 1;
 	}
-	location->link = newone;	//만약 location->link 가 NULL이면 마지막위치에 newone을 가리킨다
-	newone->link = NULL;	//newone의 link는 가리키는 값이 없으니까 NULL을 가리키게 한다.
-	return 1;
+
+	return ;
 }
 
-int deleteVertex(Graph* aGraph, int key)	//vlist[key]에 있는 값들을 다 삭제한다.
+void deleteVertex(Graph* aGraph, int key)	//vlist[key]에 있는 값들을 다 삭제한다.
 {	//deleteVertex 안에는 deleteNode도 해야함
-	VertexHead * here = aGraph->vlist[key];
-	Vertex* location = aGraph->vlist[key].head;
+	//지금 현재 Node는 안되는 상태
+	Vertex* location;
 	Vertex* before;
+	printf("1\n");
+	if(visited[key] == 0)
+	{
+		printf("해당 Vertex가 그래프에 없습니다!\n");
+		return;
+	}
 
-	if(location != NULL)
+	location = aGraph->vlist[key].head->link;
+	while(location != NULL)
 	{
 		before = location;
 		location = location->link;
 		free(before);
 	}
-	free(aGraph->vlist);
-
-	return 0;
+	aGraph->vlist[key].head = NULL;
+	return ;
 }
 
 void insertEdge(Graph* aGraph, int fromV, int toV)
 {
+	Vertex* location;
+	if(visited[fromV] == 0 || visited[toV]==0)
+	{
+		printf("그래프에 없는 정점입니다!\n");
+		return ;
+	}
 	Vertex* newone = (Vertex*)malloc(sizeof(Vertex));
 	newone->num = toV;
-	Vertex* location = aGraph->vlist[fromV].head;
-	while(location != NULL)
+	Vertex* newone2 = (Vertex*)malloc(sizeof(Vertex));
+	newone2->num = fromV;
+	if(aGraph->vlist[fromV].head == NULL)
 	{
-		location = location->link;
-		if(location->num == toV)
-		{
-			insertVertex(aGraph, toV, fromV);
-			return;
+		aGraph->vlist[fromV].head = newone;
+		newone->link = NULL;
 	}
-	//만약에 vlist[fromV]에서 newone->num과 일치하는 값이 없는 경우!
-	printf("Edge를 추가 할 Vertex가 존재하지 않습니다!\n");
+	else
+	{
+		if(aGraph->vlist[fromV].head->num != toV)
+		{
+			location = aGraph->vlist[fromV].head;
+			while(location->link != NULL)
+			{
+				location = location->link;
+				if(location->num == toV)
+				{
+					break;
+				}
+			}
+			if(location->num != toV)
+			{
+				location->link = newone;
+				newone->link = NULL;
+			}
+		}
+	}
+
+	if(aGraph->vlist[toV].head == NULL)
+	{
+		aGraph->vlist[toV].head = newone2;
+		newone2->link = NULL;
+	}
+	else
+	{
+		if(aGraph->vlist[toV].head->num != fromV)
+		{
+			location = aGraph->vlist[toV].head;
+			while(location->link != NULL)
+			{
+				location = location->link;
+				if(location->num == fromV)
+				{
+					break;
+				}
+			}
+			if(location->num != fromV)
+			{
+				location->link = newone2;
+				newone2->link = NULL;
+			}
+		}
+	}
 	return ;
 }
 
 void deleteEdge(Graph* aGraph, int fromV, int toV)
 {
-	Vertex* newone = aGraph->vlist[fromV].head;
+	Vertex* flocation= aGraph->vlist[fromV].head;
+	Vertex* tlocation= aGraph->vlist[toV].head;
 	Vertex* before;
 
-	while(newone != NULL)
+	if(flocation == NULL || tlocation == NULL)
 	{
-		before = newone;
-		newone = newone->link;
-		if(newone->num == toV)
+		printf("해당 vertex들은 연결되어 있지 않습니다.\n");
+		return;
+	}
+	if(flocation->num == toV)
+	{
+		if(flocation->link == NULL)
 		{
-			if(newone->link == NULL) //만약 해당 line에서 마지막 vertex일 시에
+			free(flocation);
+			aGraph->vlist[fromV].head = NULL;
+		}
+		else
+		{
+			aGraph->vlist[fromV].head = flocation->link;
+			free(flocation);
+		}
+	}
+	else
+	{
+		while(flocation != NULL)
+		{
+			if(flocation->num != toV)
 			{
-				free(newone);
-				before->link = NULL;
-				return;
-			}
-			else if(newone->link != NULL)
-			{
-				before->link = newone->link;
-				free(newone);
-				return;
+				before = flocation;
+				flocation = before->link;
+				if(flocation== NULL)
+				{
+					printf("해당 edge가 그래프에 없습니다.\n");
+					return ;
+				}
+
+				if(flocation->num == toV)
+				{
+					if(flocation->link == NULL) //만약 해당 line에서 마지막 vertex일 시에
+					{
+						free(flocation);
+						before->link = NULL;
+						break;
+					}
+					else if(flocation->link != NULL)
+					{
+						before->link = flocation->link;
+						free(flocation);
+						break;
+					}
+				}
 			}
 		}
 	}
-	// 값을 찾을 수 없는 경우
-	if(newone == NULL)	printf("Vertex들로 연결된 Edge를 찾을 수 없습니다.\n"); return;
 
-	newone = aGraph->vlist[toV].head;
-	while(newone != NULL)
+	if(tlocation->num == fromV)
+	{
+		if(tlocation->link == NULL)
 		{
-			before = newone;
-			newone = newone->link;
-			if(newone->num == fromV)
+			free(tlocation);
+			aGraph->vlist[toV].head = NULL;
+			return;
+		}
+		else
+		{
+			aGraph->vlist[toV].head = tlocation->link;
+			free(tlocation);
+		}
+	}
+	else
+	{
+		while(tlocation != NULL)
+		{
+			if(tlocation->num != fromV)
 			{
-				if(newone->link == NULL) //만약 해당 line에서 마지막 vertex일 시에
+				before = tlocation;
+				tlocation = tlocation->link;
+				if(tlocation->num == fromV)
 				{
-					free(newone);
-					before->link = NULL;
-					return;
-				}
-				else if(newone->link != NULL)
-				{
-					before->link = newone->link;
-					free(newone);
-					return;
+					if(tlocation->link == NULL) //만약 해당 line에서 마지막 vertex일 시에
+					{
+						free(tlocation);
+						before->link = NULL;
+						break;
+					}
+					else if(tlocation->link != NULL)
+					{
+						before->link = tlocation->link;
+						free(tlocation);
+						break;
+					}
 				}
 			}
 		}
+	}
 
+	return;
 }
 
 void depthFS(Graph* aGraph, int v)
 {
-	Vertex* h;
-	visited[v] = 1;
-	printf("%d", v);
+	Vertex* w;
+	Stack st1;
+	Stackinit(&st1);
+	Push(&st1, v);
+	Svisited[v] = TRUE;
+	printf("%5d ",v);
+	while(st1.top != NULL)
+	{
+		w = aGraph->vlist[v].head;
+		while(w)
+		{
+			if(!Svisited[w->num])
+			{
+				Push(&st1, w->num);
+				Svisited[w->num] = TRUE;
+				printf("%d ", w->num);
+				//v = w->num;
+				//w = aGraph->vlist[v].head;
+			}
+			else {
+				w = w->link;
+			}
+		}
+		v= Pop(&st1);
+	}
+return;
+}
 
+void breadthFS(Graph* aGraph, int v)
+{
+	Vertex* w;
+	Queue q;
+	Queueinit(&q);
+	printf("%d", v);
+	Qvisited[v] = TRUE;
+	Enqueue(&q, v);
+	while(q.queue[q.front] != NULL)
+	{
+		v = Dequeue(&q);
+		for(w = aGraph->vlist[v].head; w; w= w->link)
+		{
+			if(!visited[w->num])
+			{
+				printf("%d ", w->num);
+				Enqueue(&q, w->num);
+				visited[w->num] = TRUE;
+			}
+		}
+	}
+	return;
 }
 
 void printGraph(Graph* aGraph)
 {
-	Vertex* loaction = aGraph->vlist->head;
+	int a;
+	if(aGraph == NULL)
+	{
+		printf("그래프 정보가 없습니다.\n");
+		return;
+	}
 
+	for(a=0; a<MAX_VERTEX; a++)
+	{
+		Vertex* location = aGraph->vlist[a].head;
+		if(location != NULL)
+		{
+			printf("Vertex [%d] 와 연결된 정점 : ", a);
+			while(location != NULL)
+			{
+				printf("%d ",location->num);
+				location = location->link;
+			}
+			printf("\n");
+		}
+
+	}
+	return;
 }
 
 void Stackinit(Stack* pstack)
@@ -333,22 +513,7 @@ int Dequeue(Queue * pq)
 {
 	if(pq->rear == pq->front)
 	{
-
+		return 1;
 	}
-
-
-
+	return 1;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
