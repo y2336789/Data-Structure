@@ -237,13 +237,13 @@ int bubbleSort(int *a)	//버블 정렬에 관한 코드이다.
 
 	for(i = 0; i < MAX_ARRAY_SIZE; i++)	//안의 for문을 총 MAX_ARRAY_SIZE만큼 반복시켜주는 for문
 	{
-		for (j = 0; j < MAX_ARRAY_SIZE; j++)	//두 개의 값을 비교해서 값을 바꿔주는 for문
+		for (j = 0; j < MAX_ARRAY_SIZE-1; j++)	//두 개의 값을 비교해서 값을 바꿔주는 for문
 		{
-			if (a[j-1] > a[j]) //처음 실행되면 건너뛰게 된다. 만약 a[j-1]의 값이 a[j]보다 클 경우에
+			if (a[j] > a[j+1]) //처음 실행되면 건너뛰게 된다. 만약 a[j-1]의 값이 a[j]보다 클 경우에
 			{
-				t = a[j-1]; //만약 비교하고자 하는 값 보다 앞에 있는 값이 더 클 경우에
-				a[j-1] = a[j];	//그 둘의 위치를 바꿔주는데
-				a[j] = t;	//이 경우를 끝까지 반복하기 때문에 한 번 반복문을 실행하게 되면
+				t = a[j]; //만약 비교하고자 하는 값 보다 앞에 있는 값이 더 클 경우에
+				a[j] = a[j+1];	//그 둘의 위치를 바꿔주는데
+				a[j+1] = t;	//이 경우를 끝까지 반복하기 때문에 한 번 반복문을 실행하게 되면
 			}
 		}
 	}
@@ -271,48 +271,49 @@ int shellSort(int *a) //쉘 정렬을 구현한 코드이다
 			{
 				v = a[j];	//a[j]에 저장된 값을 v에 저장한다
 				k = j;	// j의 위치를 k에 저장한다.
-				while (k > h-1 && a[k-h] > v)
-				{
-					a[k] = a[k-h];
-					k -= h;
-				}
-				a[k] = v;
+				while (k > h-1 && a[k-h] > v) //k(j)의 위치가 h-1보다 크면서, k-h의 원소가 v(j번재 원소)보다 클때
+				{	//이 조건을 만족하면, 큰 값이 앞에 위치하는 의미이다. 그러므로 값의 변경을 해준다
+					a[k] = a[k-h];	//그러면 k-h의 값을 k로 바꿔준다.
+					k -= h;	//k에 k-h의 값을 저장한다. 값을 바꿔 줄 것은 이제 k-h의 값을 바꿔줘야 하기 때문이다.
+				}	//반복문을 돌고 나서, 반복문의 조건에 불만족하면
+				a[k] = v;	//반복문 탈출 후, 저장해놓았던 v의 값을 통해 a[k]의 값을 변경시켜준다.
 			}
 		}
 	}
 	printf("----------------------------------------------------------------\n");
-	printArray(a);
+	printArray(a);	//정렬된 값을 출력한다.
 
 	return 0;
 }
 
-int quickSort(int *a, int n)
-{
+int quickSort(int *a, int n) //퀵정렬에 관한 코드이다. n의 값은 배열의 크기이다.
+{	//기준 값을 중심으로, 왼쪽과 오른쪽으로 나눠서 정렬을 실시한다.
 	int v, t;
 	int i, j;
 
-	if (n > 1)
+	if (n > 1)	//배열의 크기가 1보다 크면
 	{
-		v = a[n-1];
-		i = -1;
-		j = n - 1;
+		v = a[n-1];	//n-1에 위치한 값을 v에 저장, v가 pivot이다.
+		i = -1;	//i는 -1->left
+		j = n - 1;	//j는 n-1->right이다.
 
 		while(1)
 		{
-			while(a[++i] < v);
-			while(a[--j] > v);
+			while(a[++i] < v);	//피봇보다 크거나 같은 값을 찾는 코드이다.(왼쪽에서 오른쪽으로)
+			while(a[--j] > v);	//피봇보다 작거나 같은 값을 찾는 코드이다(오른쪽에서 왼쪽으로)
 
-			if (i >= j) break;
-			t = a[i];
-			a[i] = a[j];
-			a[j] = t;
+			if (i >= j) break;	//만약 i와 j가 서로 지나쳤다면 탈출한다.
+			t = a[i];	//위의 조건문에 만족하지 않으면 이 코드를 실행한다. t에 i번째 값을 저장한다
+			a[i] = a[j];	//i번째에 j번째 값을 저장하고
+			a[j] = t;	//j번째에 t에 저장된 값을 저장
 		}
-		t = a[i];
-		a[i] = a[n-1];
-		a[n-1] = t;
+		//i가 j보다 작은 경우!
+		t = a[i];	//a[i]의 값을 t에 저장한다.
+		a[i] = a[n-1];	//a[n-1]의 값, 즉 pivot과 a[i]의 값을 변경한다.
+		a[n-1] = t;	//a[n-1]에 저장되있던 t의 값을 저장시킨다.
 
-		quickSort(a, i);
-		quickSort(a+i+1, n-i-1);
+		quickSort(a, i);	//pivot을 중심으로, 왼쪽에 있는 값들을 다시 재귀함수 호출로 quicksort한다.
+		quickSort(a+i+1, n-i-1);	 //pivot을 중심으로, 오른쪽에 있는 값들을 다시 재귀함수 호출로 quicksort한다.
 	}
 
 
@@ -320,7 +321,7 @@ int quickSort(int *a, int n)
 }
 
 int hashCode(int key) {
-   return key % MAX_HASH_TABLE_SIZE;
+   return key % MAX_HASH_TABLE_SIZE; //key의 값을 hash table의 size만큼 나눠주는 함수이다.
 }
 
 int hashing(int *a, int **ht)
@@ -336,7 +337,7 @@ int hashing(int *a, int **ht)
 	}
 
 	for(int i = 0; i < MAX_HASH_TABLE_SIZE; i++)
-		hashtable[i] = -1;
+		hashtable[i] = -1;	//hash table을 각각 -1로 만들어준다.
 
 	/*
 	for(int i = 0; i < MAX_HASH_TABLE_SIZE; i++)
@@ -348,26 +349,27 @@ int hashing(int *a, int **ht)
 	int index = -1;
 	for (int i = 0; i < MAX_ARRAY_SIZE; i++)
 	{
-		key = a[i];
-		hashcode = hashCode(key);
+		key = a[i];	//a[i]에 있는 값을 key에 저장
+		hashcode = hashCode(key);	//key값을 hash table의 size로 나눠준다.
 		/*
 		printf("key = %d, hashcode = %d, hashtable[%d]=%d\n", key, hashcode, hashcode, hashtable[hashcode]);
 		*/
-		if (hashtable[hashcode] == -1)
+		if (hashtable[hashcode] == -1) //만약 hashtable[hashcode]가 -1이라면(hashcode 위치가 빈 공간이라면)
 		{
-			hashtable[hashcode] = key;
-		} else 	{
+			hashtable[hashcode] = key;	//hashtable[hashcode]에 key값을 넣어준다.
+		} else{ //그 외의 경우, 만약 이미 hashtable[hashcode]에 값이 저장되어있는 경우	{
 
-			index = hashcode;
+			index = hashcode; //hashcode의 값을 index에 저장한다.
 
-			while(hashtable[index] != -1)
+
+			while(hashtable[index] != -1)	//hashtable[index]가 -1이 아닌 이상, 즉 index위치에 저장되어 있을 때
 			{
-				index = (++index) % MAX_HASH_TABLE_SIZE;
+				index = (++index) % MAX_HASH_TABLE_SIZE; //index의 값을 갱신한다. index에 1을 더하고 hash table의 size로 나누어준다.
 				/*
 				printf("index = %d\n", index);
 				*/
 			}
-			hashtable[index] = key;
+			hashtable[index] = key;	//만약 갱신된 index의 위치가 -1의 값을 가질 때, 즉 빈 공간일때, hash table내의 index위치에 key값을 저장시킨다.
 		}
 	}
 
@@ -376,17 +378,14 @@ int hashing(int *a, int **ht)
 
 int search(int *ht, int key)
 {
-	int index = hashCode(key);
+	int index = hashCode(key); //hashCode에서 size만큼 나눠준 값을 index에 저장한다.
 
-	if(ht[index] == key)
-		return index;
-
-	while(ht[++index] != key)
+	if(ht[index] == key)	//만약 table의 index위치에 값이 key와 같다면
+		return index;	//index를 리턴해준다. index는 몇 번째 위치를 알려주는 정수다
+	//같지 않다면
+	while(ht[++index] != key)	//우선 index의 값을 1증가시키고, table의 index의 위치에 있는 key값과 비교한다.
 	{
-		index = index % MAX_HASH_TABLE_SIZE;
+		index = index % MAX_HASH_TABLE_SIZE;	//같지 않다면 index의 값을 수정해준다.
 	}
-	return index;
+	return index; //반복문을 돌리다보면 일치하는 key값이 나오게되고, key값과 일치하는 위치 index를 반환시켜준다.
 }
-
-
-
