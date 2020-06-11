@@ -56,8 +56,9 @@ int main()
 	srand(time(NULL));
 
 	do{
+		printf("----------------------- 2017038068  양영재 ----------------------\n");
 		printf("----------------------------------------------------------------\n");
-		printf("                        Sorting & Hashing                       \n");
+		printf("                    Sorting & Hashing                       \n");
 		printf("----------------------------------------------------------------\n");
 		printf(" Initialize       = z           Quit             = q\n");
 		printf(" Selection Sort   = s           Insertion Sort   = i\n");
@@ -162,7 +163,7 @@ void printArray(int *a)
 		printf("a[%02d] ", i); // a[위치] : 저장된 값 과 같은 형식으로 출력을 하게 된다.
 	printf("\n");
 	for(int i = 0; i < MAX_ARRAY_SIZE; i++)
-		printf("%5d ", a[i]);
+		printf("%6d ", a[i]);
 	printf("\n");
 }
 
