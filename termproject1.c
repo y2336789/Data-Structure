@@ -7,29 +7,34 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define MAX_VERTEX 20
+#define MAX_VERTEX 30
 #define TRUE 1
 #define FALSE 0
 
-int visited[MAX_VERTEX]={0,};
-int Svisited[MAX_VERTEX];
-int Qvisited[MAX_VERTEX];
+int visited[MAX_VERTEX]={0,};	//그래프에서 vertex들을 방문했는지 값을 저장하는 visited 배열
+int Svisited[MAX_VERTEX]={0,};
+int Qvisited[MAX_VERTEX]={0,};
 
-
-//  Stack
-typedef struct _stack
+typedef struct QNode
 {
-	int stackArr[MAX_VERTEX];
-	int top;
-}Stack;
+	int data;
+	struct QNode *link;
+}QNode;
 
-// Queue
-typedef struct _cQueue
+typedef struct
 {
-	int front;
-	int rear;
-	int queue[MAX_VERTEX];
-}Queue;
+	QNode *front;
+	QNode *rear;
+}LQ;
+
+LQ *createLinkedQ()
+{
+	LQ * lq;
+	lq = (LQ*)malloc(sizeof(LQ));
+	lq->front = NULL;
+	lq->rear = NULL;
+	return lq;
+}
 
 // 주어진 자료 구조
 typedef struct Vertex {
@@ -55,13 +60,9 @@ void depthFS(Graph* aGraph, int v);
 void breadthFS(Graph* aGraph, int v);
 void printGraph(Graph* aGraph);
 
-void Stackinit(Stack* pstack);
-void Push(Stack* pstack, int data);
-int Pop(Stack* pstack);
-
-void Queueinit(Queue *pq);
-void Enqueue(Queue * pq, int data);
-int Dequeue(Queue * pq);
+int isEmpty(LQ *lq);
+void enqueue(LQ *lq, int key);
+int deQueue(LQ *lq);
 
 int main(void)
 {
@@ -140,46 +141,47 @@ int main(void)
 	return 1;
 }
 
-void createGraph(Graph * aGraph)
+void createGraph(Graph * aGraph)	//그래프를 생성하는 함수이다. 그래프가 가리키는 vlist를 동적할당해주는 함수
 {
 	int a=0;
-	aGraph->vlist = (VertexHead *)malloc(sizeof(VertexHead)* MAX_VERTEX);
-
+	aGraph->vlist = (VertexHead *)malloc(sizeof(VertexHead)* MAX_VERTEX);	//aGrpah는 main에서 mygraph가 넘어온건데 선언 외에는 지정해 준 것이 없다. 동적 할당을 해준다.
+	//vlist는 MAX_VERTEX의 size를 가진 배열이다.
 	for(a; a< MAX_VERTEX; a++)
 	{
-		aGraph->vlist[a].head = NULL;
+		aGraph->vlist[a].head = NULL;	//MAX_VERTEX만큼 동적할당을 해주었고, 현재 아무것도 가리키는 것이 아무것도 없으니 NULL을 가리키게 한다.
 	}
 	return;
 }
 
-void destroyGraph(Graph* aGraph)
+void destroyGraph(Graph* aGraph)	//동적할당한 요소를 해제하고, 그래프에 저장된 값을 다 없애주는 함수
 {
 	int a=0;
-	Vertex* before;
-	Vertex* location;
-	for(a; a< MAX_VERTEX; a++)
+	Vertex* before;	//location의 전 위치를 담고 있을 before 변수
+	Vertex* location;	//그래프의 값들을 삭제하기 위해 위치를 저장할 변수 location
+	for(a; a< MAX_VERTEX; a++) //vlist의 모든 곳에 접근한다.
 	{
-		if(aGraph->vlist[a].head != NULL)
+		if(aGraph->vlist[a].head != NULL)	//만약 vlist[a].head에 값이 저장되어있다면
 		{
-			location = aGraph->vlist[a].head->link;
-			while(location != NULL)
+			location = aGraph->vlist[a].head->link;	//location을 해당 위치를 잡게 설정해준다.
+			while(location != NULL)	//location이 NULL이 아니라면
 			{
-				before = location;
-				location = location->link;
-				free(before);
+				before = location;	//location의 위치를 옮기기 위해, before를 location와 같은 곳을 가리키게 한 뒤에
+				location = location->link;	//location의 위치를 옮겨준다
+				free(before);	//before를 동적 할당을 해제시켜준다. 이 방법을 location이 NULL이 될 때 까지 반복한다.
 			}
 		}
-		aGraph->vlist[a].head = NULL;
-		visited[a] = 0;
+		//만약 해제가 다 이뤄지고 location이 NULL인 상태가 되면 해당 vlist[a]에 삽입된 Vertex는 없는 것이다
+		aGraph->vlist[a].head = NULL;	//그래서 vlist[a].head에 NULL을 저장해준다.
+		visited[a] = 0; //visited 배열은 그래프 상에서 어느 vertex를 방문했는지 값을 담고있는 배열인데 값의 삭제가 이루어졌으니 a를 방문했다는 정보를 0(False)로 바꾸어 준다.
 	}
 	return;
 }
 
-void insertVertex(Graph* aGraph, int input) //input에 있는 숫자는 배열 순서
+void insertVertex(Graph* aGraph, int input) //input에 있는 저장되어 있는 값은 몇 번 Vertex를 활성화 할 것인지이다.
 {
-	if(visited[input] == 0)
+	if(visited[input] == 0)	//visited[input]의 값이 0이면(방문하지 않은 값이라면)
 	{
-		visited[input] = 1;
+		visited[input] = 1; //값을 1로 바꿔준다.
 	}
 
 	return ;
@@ -190,21 +192,34 @@ void deleteVertex(Graph* aGraph, int key)	//vlist[key]에 있는 값들을 다 �
 	//지금 현재 Node는 안되는 상태
 	Vertex* location;
 	Vertex* before;
-	printf("1\n");
+	int a;
 	if(visited[key] == 0)
 	{
 		printf("해당 Vertex가 그래프에 없습니다!\n");
 		return;
 	}
+	/*for(a=0;a<MAX_VERTEX; a++)
+	{
+		if(visited[a] == 1)
+		{
+			deleteEdge(aGraph,key,a);
+		}
+	}
+	visited[key] = 0;*/
 
-	location = aGraph->vlist[key].head->link;
+	location = aGraph->vlist[key].head;//->link
 	while(location != NULL)
 	{
 		before = location;
 		location = location->link;
+		a= before->num;
+		deleteEdge(aGraph,key,a);
 		free(before);
 	}
 	aGraph->vlist[key].head = NULL;
+	visited[key] = 0;
+
+
 	return ;
 }
 
@@ -280,7 +295,7 @@ void deleteEdge(Graph* aGraph, int fromV, int toV)
 	Vertex* tlocation= aGraph->vlist[toV].head;
 	Vertex* before;
 
-	if(flocation == NULL || tlocation == NULL)
+	if(flocation == NULL && tlocation == NULL)
 	{
 		printf("해당 vertex들은 연결되어 있지 않습니다.\n");
 		return;
@@ -305,7 +320,7 @@ void deleteEdge(Graph* aGraph, int fromV, int toV)
 			if(flocation->num != toV)
 			{
 				before = flocation;
-				flocation = before->link;
+				flocation = flocation->link;
 				if(flocation== NULL)
 				{
 					printf("해당 edge가 그래프에 없습니다.\n");
@@ -337,12 +352,14 @@ void deleteEdge(Graph* aGraph, int fromV, int toV)
 		{
 			free(tlocation);
 			aGraph->vlist[toV].head = NULL;
+			printf("1\n");
 			return;
 		}
-		else
+		else if(tlocation->link != NULL)
 		{
 			aGraph->vlist[toV].head = tlocation->link;
 			free(tlocation);
+			return ;
 		}
 	}
 	else
@@ -378,51 +395,55 @@ void deleteEdge(Graph* aGraph, int fromV, int toV)
 void depthFS(Graph* aGraph, int v)
 {
 	Vertex* w;
-	Stack st1;
-	Stackinit(&st1);
-	Push(&st1, v);
 	Svisited[v] = TRUE;
-	printf("%5d ",v);
-	while(st1.top != NULL)
+	printf("%d ",v);
+
+	for(w = aGraph->vlist[v].head; w; w = w->link)
 	{
-		w = aGraph->vlist[v].head;
-		while(w)
+		if(Svisited[w->num] == 0)
 		{
-			if(!Svisited[w->num])
-			{
-				Push(&st1, w->num);
-				Svisited[w->num] = TRUE;
-				printf("%d ", w->num);
-				//v = w->num;
-				//w = aGraph->vlist[v].head;
-			}
-			else {
-				w = w->link;
-			}
+			depthFS(aGraph, w->num);
 		}
-		v= Pop(&st1);
 	}
-return;
+	return;
 }
 
 void breadthFS(Graph* aGraph, int v)
 {
-	Vertex* w;
-	Queue q;
-	Queueinit(&q);
+	/*Vertex* w;
 	printf("%d", v);
 	Qvisited[v] = TRUE;
-	Enqueue(&q, v);
-	while(q.queue[q.front] != NULL)
+	Enqueue(*queue, v);
+	while(!isEmpty(*queue))
 	{
-		v = Dequeue(&q);
-		for(w = aGraph->vlist[v].head; w; w= w->link)
+		v = Dequeue(*queue);
+		for(w = aGraph->vlist[v].head; w; w = w->link)
 		{
-			if(!visited[w->num])
+			if(Qvisited[w->num] == 0)
 			{
-				printf("%d ", w->num);
-				Enqueue(&q, w->num);
-				visited[w->num] = TRUE;
+				printf("%5d ", w->num);
+				Enqueue(*queue, w->num);
+				Qvisited[w->num] = TRUE;
+			}
+		}
+	}*/
+	Vertex* w;
+	LQ *q;
+	q = createLinkedQ();
+	Qvisited[v] = TRUE;
+	printf("%d", v);
+	enQueue(q,v);
+
+	while(!isEmpty(q))
+	{
+		v=deQueue(q);
+		for(w=aGraph->vlist[v].head; w; w = w->link)
+		{
+			if(Qvisited[w->num] == FALSE)
+			{
+				Qvisited[w->num] = TRUE;
+				printf("%5d", w->num);
+				enQueue(q, w->num);
 			}
 		}
 	}
@@ -432,7 +453,7 @@ void breadthFS(Graph* aGraph, int v)
 void printGraph(Graph* aGraph)
 {
 	int a;
-	if(aGraph == NULL)
+	if(aGraph->vlist == NULL)
 	{
 		printf("그래프 정보가 없습니다.\n");
 		return;
@@ -451,70 +472,68 @@ void printGraph(Graph* aGraph)
 			}
 			printf("\n");
 		}
-
+		else
+		{
+			if(visited[a] == 1)
+			{
+				printf("Vertex [%d] 와 연결된 정점 : ", a);
+				printf("아무런 값도 없습니다.\n");
+			}
+		}
 	}
 	return;
 }
 
-void Stackinit(Stack* pstack)
+
+int isEmpty(LQ *lq)
 {
-	int i;
-	for(i=0; i<MAX_VERTEX; i++)
+	if(lq->front == NULL)
 	{
-		pstack->stackArr[i] = 0;
+		//printf("Queue is empty!\n");
+		return 1;
 	}
-	pstack->top = -1;
-}
-
-void Push(Stack* pstack, int data)
-{
-	pstack->top += 1;
-	pstack->stackArr[pstack->top] = data;
-}
-
-int Pop(Stack* pstack)
-{
-	int before;
-	if(pstack->top == -1)
-	{
-		printf("Stack is Empty!\n");
+	else
 		return 0;
-	}
-	before = pstack->top;
-	pstack->top -= 1;
-
-	return pstack->stackArr[before];
 }
 
-void Queueinit(Queue *pq)
+void enQueue(LQ *lq, int key)
 {
-	int i;
-	pq->front = -1;
-	pq->rear = -1;
-	for(i=0;i<MAX_VERTEX;i++)
-	{
-		pq->queue[i] = 0;
-	}
-}
+	QNode *newNode = (QNode*)malloc(sizeof(QNode));
+	newNode->data = key;
+	newNode->link = NULL;
 
-void Enqueue(Queue * pq, int data)
-{
-	if(((pq->rear+1) % MAX_VERTEX) == pq->front)
+	if(lq->front == NULL)
 	{
-		printf("Queue is FULL!\n");
-		return;
+		lq->front = newNode;
+		lq->rear = newNode;
+	}
+	else
+	{
+		lq->rear->link = newNode;
+		lq->rear = newNode;
 	}
 
-	pq->rear++;
-	pq->queue[pq->rear] = data;
 }
 
-int Dequeue(Queue * pq)
+int deQueue(LQ *lq)
 {
-	if(pq->rear == pq->front)
-	{
+	QNode *location = lq->front;
+	int key;
+	if(isEmpty(lq))
 		return 0;
+	else
+	{
+		key = location->data;
+		lq->front = lq->front->link;
+		if(lq->front == NULL)
+			lq->rear = NULL;
+		free(location);
+		return key;
 	}
-	pq->front = (pq->front+1) % MAX_VERTEX;
-	return pq->queue[pq->front];
 }
+
+
+
+
+
+
