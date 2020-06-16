@@ -11,9 +11,14 @@
 #define TRUE 1
 #define FALSE 0
 
+int count=0;
+
 int visited[MAX_VERTEX]={0,};	//그래프에서 vertex들을 방문했는지 값을 저장하는 visited 배열
 int Svisited[MAX_VERTEX]={0,};	//depthFS에서 어떤 vertex를 방문했는지 기록한다, visit flag
 int Qvisited[MAX_VERTEX]={0,};	//breadthFS에서 어떤 vertex를 방문했는지 기록한다
+
+int DFStack[MAX_VERTEX]= {0,};
+int StackTop = -1;
 
 typedef struct QNode	//queue를 linked list로 나타내었다.
 {
@@ -50,6 +55,7 @@ typedef struct Graph {
 	VertexHead* vlist;
 } Graph;
 
+int checkempty();
 void createGraph(Graph* aGraph);
 void destroyGraph(Graph* aGraph);
 void insertVertex(Graph* aGraph, int input);
@@ -59,6 +65,9 @@ void deleteEdge(Graph* aGraph, int fromV, int toV);
 void depthFS(Graph* aGraph, int v);
 void breadthFS(Graph* aGraph, int v);
 void printGraph(Graph* aGraph);
+
+int Pop();
+void Push(int x);
 
 int isEmpty(LQ *lq);
 void enQueue(LQ *lq, int key);
@@ -140,8 +149,22 @@ int main(void)
 	return 1;
 }
 
+int checkempty()
+{
+	int a;
+	for(a=0;a<MAX_VERTEX; a++)
+	{
+		if(visited[a]==1)
+		{
+			count++;
+		}
+	}
+	return count;
+}
+
 void createGraph(Graph * aGraph)	//그래프를 생성하는 함수이다. 그래프가 가리키는 vlist를 동적할당해주는 함수
 {
+	count = 0;
 	int a=0;
 	aGraph->vlist = (VertexHead *)malloc(sizeof(VertexHead)* MAX_VERTEX);	//aGrpah는 main에서 mygraph가 넘어온건데 선언 외에는 지정해 준 것이 없다. 동적 할당을 해준다.
 	//vlist는 MAX_VERTEX의 size를 가진 배열이다.
@@ -154,6 +177,7 @@ void createGraph(Graph * aGraph)	//그래프를 생성하는 함수이다. 그�
 
 void destroyGraph(Graph* aGraph)	//동적할당한 요소를 해제하고, 그래프에 저장된 값을 다 없애주는 함수
 {
+	count = 0;
 	int a=0;
 	Vertex* before;	//location의 전 위치를 담고 있을 before 변수
 	Vertex* location;	//그래프의 값들을 삭제하기 위해 위치를 저장할 변수 location
@@ -172,6 +196,8 @@ void destroyGraph(Graph* aGraph)	//동적할당한 요소를 해제하고, 그�
 		//만약 해제가 다 이뤄지고 location이 NULL인 상태가 되면 해당 vlist[a]에 삽입된 Vertex는 없는 것이다
 		aGraph->vlist[a].head = NULL;	//그래서 vlist[a].head에 NULL을 저장해준다.
 		visited[a] = 0; //visited 배열은 그래프 상에서 어느 vertex를 방문했는지 값을 담고있는 배열인데 값의 삭제가 이루어졌으니 a를 방문했다는 정보를 0(False)로 바꾸어 준다.
+		Svisited[a] = 0;
+		Qvisited[a] = 0;
 	}
 	return;
 }
@@ -383,15 +409,25 @@ void deleteEdge(Graph* aGraph, int fromV, int toV)	//fromV와 toV에 연결된 �
 void depthFS(Graph* aGraph, int v)	//깊이 우선 탐색이다
 {
 	Vertex* w;
-	Svisited[v] = TRUE;	//깊이 우선 탐색에서 visit flag를 저장할 Svisited 배열, Svisited[v]위치를 TRUE로 바꾸고, 방문 표시
-	printf("%d ",v); //v의 값을 출력한다.
-
-	for(w = aGraph->vlist[v].head; w; w = w->link)	//vlist[v]에 연결된 Vertex들에 모두 접근
+	Svisited[v] = TRUE;
+	Push(v);
+	printf("%d",v);
+	while(StackTop != -1)
 	{
-		if(Svisited[w->num] == FALSE)	//만약 w가 가리키는 Vertex의 num에 해당하는 Svisited에 위치 값이 0인 경우, 즉 방문한 적이 없는 경우
-		{
-			depthFS(aGraph, w->num);	//재귀 함수를 호출한다. 넘기는 int값은 w->num을 넘긴다.
-		}
+			w = aGraph->vlist[v].head;
+			while(w)
+			{
+				if(Svisited[w->num] == 0)
+				{
+					Push(w->num);
+					Svisited[w->num] = 1;
+					printf("->%d", w->num);
+					v = w->num;
+					w = aGraph->vlist[v].head;
+				}
+				else w = w->link;
+			}
+			v = Pop();
 	}
 	return;
 }
@@ -451,6 +487,22 @@ void printGraph(Graph* aGraph)
 	return;
 }
 
+void Push(int x)
+{
+	StackTop++;
+	DFStack[StackTop] = x;
+}
+
+int Pop()
+{
+	if (StackTop == -1)
+	{
+		printf("Stack is FULL!\n");
+		return 0;
+	}
+	StackTop--;
+	return DFStack[StackTop];
+}
 
 int isEmpty(LQ *lq)
 {
