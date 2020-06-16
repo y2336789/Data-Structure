@@ -409,25 +409,25 @@ void deleteEdge(Graph* aGraph, int fromV, int toV)	//fromV와 toV에 연결된 �
 void depthFS(Graph* aGraph, int v)	//깊이 우선 탐색이다
 {
 	Vertex* w;
-	Svisited[v] = TRUE;
-	Push(v);
-	printf("%d",v);
-	while(StackTop != -1)
+	Svisited[v] = TRUE;	//우선 기준 값인 v에 대해 visited flag를 표기한다
+	Push(v);	//표기 한 후에 v의 값을 스택에 push한다
+	printf("%d",v);	//값을 출력한다
+	while(StackTop != -1)	//스택이 비어있지 않으면 반복한다.
 	{
-			w = aGraph->vlist[v].head;
-			while(w)
+			w = aGraph->vlist[v].head;	//처음에 w는 vlist[v]에서 시작한다
+			while(w) //w가 NULL이 아니라면
 			{
-				if(Svisited[w->num] == 0)
+				if(Svisited[w->num] == 0)	//게다가 Svisited에 w->num에 해당하는 곳에 visit flag가 없다면
 				{
-					Push(w->num);
-					Svisited[w->num] = 1;
-					printf("->%d", w->num);
-					v = w->num;
-					w = aGraph->vlist[v].head;
+					Push(w->num);	//stack에 w->num을 push하고
+					Svisited[w->num] = 1; //visit flag를 표기한다
+					printf("->%d", w->num);	//해당 값을 표기하고
+					v = w->num;	//v를 w->num의 값으로 바꿔준다.
+					w = aGraph->vlist[v].head; //w도 위치가 바뀐 vlist[v].head로 이동시켜준다
 				}
-				else w = w->link;
+				else w = w->link; // visit flag가 1이라면 w를 옮겨주고
 			}
-			v = Pop();
+			v = Pop();	//옮겨도 옮겨도 찾을 수 없다면 스택에서 값을 pop
 	}
 	return;
 }
