@@ -11,7 +11,7 @@
 #define TRUE 1
 #define FALSE 0
 
-int count=0;
+int count=0; //카운트를 계산함으로, vlist가 활성화만 되었는지 아니면 Vertex들이 연결된 상태인지 알 수 있다.
 
 int visited[MAX_VERTEX]={0,};	//그래프에서 vertex들을 방문했는지 값을 저장하는 visited 배열
 int Svisited[MAX_VERTEX]={0,};	//depthFS에서 어떤 vertex를 방문했는지 기록한다, visit flag
@@ -149,14 +149,14 @@ int main(void)
 	return 1;
 }
 
-int checkempty()
+int checkempty()	//활성화가 이뤄지었는지 확인해 주는 함수이다.
 {
 	int a;
 	for(a=0;a<MAX_VERTEX; a++)
 	{
-		if(visited[a]==1)
+		if(visited[a]==1)	//만약  visited[a]가 1이라면 활성화가 이루어 진 것이다.
 		{
-			count++;
+			count++; //그러면 count를 추가한다.
 		}
 	}
 	return count;
