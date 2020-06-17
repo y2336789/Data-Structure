@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define MAX_VERTEX 30
+#define MAX_VERTEX 40
 #define TRUE 1
 #define FALSE 0
 
@@ -20,26 +20,17 @@ int Qvisited[MAX_VERTEX]={0,};	//breadthFS에서 어떤 vertex를 방문했는�
 int DFStack[MAX_VERTEX]= {0,};
 int StackTop = -1;
 
-typedef struct QNode	//queue를 linked list로 나타내었다.
-{
-	int data;	//QNode안에 int 값을 저장하는 변수
-	struct QNode *link;	//다음 QNode를 가리킬 link
-}QNode;
+typedef struct queue{
+	int Q[MAX_VERTEX];
+	int front;
+	int rear;
+}Queue;
 
-typedef struct
-{
-	QNode *front;
-	QNode *rear;
-}LQ;
-
-LQ *createLinkedQ()
-{
-	LQ * lq;	//queue의 front와 rear를 가리킬 LQ 구조체 포인터 변수 lq를 선언
-	lq = (LQ*)malloc(sizeof(LQ));	//lq가 가리킬
-	lq->front = NULL;
-	lq->rear = NULL;
-	return lq;
-}
+Queue* createQueue();
+void enQueue(Queue* queue, int data);
+int deQueue(Queue * queue);
+int isEmpty(Queue * queue);
+int isFull(Queue * queue);
 
 // 주어진 자료 구조
 typedef struct Vertex {
@@ -69,15 +60,11 @@ void printGraph(Graph* aGraph);
 int Pop();
 void Push(int x);
 
-int isEmpty(LQ *lq);
-void enQueue(LQ *lq, int key);
-int deQueue(LQ *lq);
-
 int main(void)
 {
 	char command;
 	int key,row,from,to;
-	Graph mygraph;
+	Graph mygraph;	// 그래프에 관련된 함수의 매개변수로 전달될 mygraph
 
 	do{
 		printf("\n");
@@ -164,7 +151,7 @@ int checkempty()	//활성화가 이뤄지었는지 확인해 주는 함수이다
 
 void createGraph(Graph * aGraph)	//그래프를 생성하는 함수이다. 그래프가 가리키는 vlist를 동적할당해주는 함수
 {
-	count = 0;
+	count = 0;	//초기화 혹은 새로 Graph를 만들기에 count를 0으로 만들어 준다
 	int a=0;
 	aGraph->vlist = (VertexHead *)malloc(sizeof(VertexHead)* MAX_VERTEX);	//aGrpah는 main에서 mygraph가 넘어온건데 선언 외에는 지정해 준 것이 없다. 동적 할당을 해준다.
 	//vlist는 MAX_VERTEX의 size를 가진 배열이다.
@@ -177,8 +164,9 @@ void createGraph(Graph * aGraph)	//그래프를 생성하는 함수이다. 그�
 
 void destroyGraph(Graph* aGraph)	//동적할당한 요소를 해제하고, 그래프에 저장된 값을 다 없애주는 함수
 {
-	count = 0;
+	count = 0; //Graph에 대한 모든 것을 삭제하기에 count를 0으로 만들어준다.
 	int a=0;
+	int b;
 	Vertex* before;	//location의 전 위치를 담고 있을 before 변수
 	Vertex* location;	//그래프의 값들을 삭제하기 위해 위치를 저장할 변수 location
 	for(a; a< MAX_VERTEX; a++) //vlist의 모든 곳에 접근한다.
@@ -196,9 +184,14 @@ void destroyGraph(Graph* aGraph)	//동적할당한 요소를 해제하고, 그�
 		//만약 해제가 다 이뤄지고 location이 NULL인 상태가 되면 해당 vlist[a]에 삽입된 Vertex는 없는 것이다
 		aGraph->vlist[a].head = NULL;	//그래서 vlist[a].head에 NULL을 저장해준다.
 		visited[a] = 0; //visited 배열은 그래프 상에서 어느 vertex를 방문했는지 값을 담고있는 배열인데 값의 삭제가 이루어졌으니 a를 방문했다는 정보를 0(False)로 바꾸어 준다.
-		Svisited[a] = 0;
-		Qvisited[a] = 0;
 	}
+	for(b=0; b<MAX_VERTEX; b++)
+	{
+		Svisited[b] = 0;	//dfs에 visit flag에 대한 정보를 저장하고 있는 Svisited를 전부 0으로 초기화시켜준다.
+		Qvisited[b] = 0; //bfs에 visit flag에 대한 정보를 저장하고 있는 Qvisited를 전부 0으로 초기화시켜준다.
+	}
+	StackTop = -1;
+	free(aGraph->vlist);
 	return;
 }
 
@@ -208,7 +201,6 @@ void insertVertex(Graph* aGraph, int input) //input에 있는 저장되어 있�
 	{
 		visited[input] = 1; //값을 1로 바꿔준다.
 	}
-
 	return ;
 }
 
@@ -217,7 +209,7 @@ void deleteVertex(Graph* aGraph, int key)	//vlist[key]에 있는 값들을 다 �
 	//지금 현재 Node는 안되는 상태
 	Vertex* location;
 	Vertex* before;
-	int a;
+	int a,b;
 	if(visited[key] == 0)	//만약 활성화 시키지 않은 vertex를 삭제 할 시에
 	{
 		printf("해당 Vertex가 그래프에 없습니다!\n");
@@ -235,6 +227,12 @@ void deleteVertex(Graph* aGraph, int key)	//vlist[key]에 있는 값들을 다 �
 	}	//반복문을 반복하면서 vlist[key].head에 연결된 동적할당된 Vertex들이 해제된다.
 	aGraph->vlist[key].head = NULL; //다 해제했으면 vlist[key].head가 가리키는 것을 NULL로 바꿔준다
 	visited[key] = 0; //Vertex를 삭제하기 때문에 방문기록을 0으로 바꾼다
+	for(b=0; b<MAX_VERTEX; b++)
+	{
+		Svisited[b] = 0;	//dfs에 visit flag에 대한 정보를 저장하고 있는 Svisited를 전부 0으로 초기화시켜준다.
+		Qvisited[b] = 0; //bfs에 visit flag에 대한 정보를 저장하고 있는 Qvisited를 전부 0으로 초기화시켜준다.
+	}
+	StackTop = -1;
 	return ;
 }
 
@@ -409,6 +407,7 @@ void deleteEdge(Graph* aGraph, int fromV, int toV)	//fromV와 toV에 연결된 �
 void depthFS(Graph* aGraph, int v)	//깊이 우선 탐색이다
 {
 	Vertex* w;
+	int a;
 	Svisited[v] = TRUE;	//우선 기준 값인 v에 대해 visited flag를 표기한다
 	Push(v);	//표기 한 후에 v의 값을 스택에 push한다
 	printf("%d",v);	//값을 출력한다
@@ -427,32 +426,43 @@ void depthFS(Graph* aGraph, int v)	//깊이 우선 탐색이다
 				}
 				else w = w->link; // visit flag가 1이라면 w를 옮겨주고
 			}
-			v = Pop();	//옮겨도 옮겨도 찾을 수 없다면 스택에서 값을 pop
+			Pop();	//옮겨도 옮겨도 찾을 수 없다면 스택에서 값을 pop
+			v = DFStack[StackTop];
 	}
+	for(a=0;a<MAX_VERTEX; a++)
+	{
+		Svisited[a]=0;
+	}
+	StackTop = -1;
+
 	return;
 }
 
 void breadthFS(Graph* aGraph, int v) //너비 우선 탐색이다
 {
+	Queue * queue = createQueue();
 	Vertex* w;
-	LQ *q;
-	q = createLinkedQ();
-	Qvisited[v] = TRUE;	//Qvisited[v]의 값을 TRUE로 바꿔준다
-	printf("%d", v);	//해당 v값을 출력 한 후
-	enQueue(q,v);	//q에 v를 집어 넣는다.
+	int i;
+	enQueue(queue, v);
+	Qvisited[v] = TRUE;
+	printf("%d", v);
 
-	while(!isEmpty(q))	//queue가 비었지 않았다면
+	while(!isEmpty(queue))
 	{
-		v=deQueue(q); //queue에서 값을 꺼내서 v에 저장한다.
-		for(w=aGraph->vlist[v].head; w; w = w->link)	//꺼내진 v의 값을 통해서  vlist[v]에 있는 모든 Vertex에 접근한다
+		v = deQueue(queue);
+		for(w=aGraph->vlist[v].head; w; w = w->link)
 		{
-			if(Qvisited[w->num] == FALSE) //만약 Qvisited[w->num]에 visit flag가 없는 경우
-			{
-				Qvisited[w->num] = TRUE;	//방문했다는 visit flag를 입력하고
-				printf("%5d", w->num);	//w->num의 값을 출력한 뒤에
-				enQueue(q, w->num); //w->num의 값을 queue에 집어 넣는다.
-			}//그 다음에는 vlist[v]상의 남은 Vertex의 값에 대해서 반복문이 실행될 것이다.
-		}	//vlist[v]상의 모든 Vertex에 대해서 enQueue를 했다면 처음에 넣었던 값을 DeQueue로 빼고 뺀 값으로 vlist[값]에 접근하서 반복한다.
+			if(Qvisited[w->num] == 0){
+				printf("->%d",w->num);
+				enQueue(queue,w->num);
+				Qvisited[w->num] = TRUE;
+			}
+		}
+	}
+
+	for(i=0; i<MAX_VERTEX; i++)
+	{
+		Qvisited[i] = 0;
 	}
 	return;
 }
@@ -460,7 +470,16 @@ void breadthFS(Graph* aGraph, int v) //너비 우선 탐색이다
 void printGraph(Graph* aGraph)
 {
 	//만약 createGraph를 하거나 destroyGraph를 하고나서 바로 출력하면 아무 값도 나오지 않는다
-	int a;
+	int a,chek;
+	chek = checkempty();
+
+	if(chek == 0) //만약 vlist가 동적할당만 되고 활성화 되지 않았다면 출력할 것이 없고, 즉 count는 0이다
+	{
+		printf("출력할 것이 아무 것도 없습니다.\n");
+		return;
+	}
+
+	// 그 외의 경우
 
 	for(a=0; a<MAX_VERTEX; a++)	//최대 크기인 MAX_VERTEX만큼 접근한다
 	{
@@ -480,79 +499,79 @@ void printGraph(Graph* aGraph)
 			if(visited[a] == 1)	//만약 vlist[a]가 활성화 되었는데 연결된 Vertex가 없다면
 			{
 				printf("Vertex [%d] 와 연결된 정점 : ", a);
-				printf("아무런 값도 없습니다.\n");
+				printf("아무런 값도 없습니다.\n");	//linked list로 연결된 것이 아무것도 없다.
 			}
 		}
 	}
 	return;
 }
 
-void Push(int x)
+void Push(int x)	//dfs와 관련해서 stack에 Push하는 것
 {
-	StackTop++;
+	StackTop++;	//StackTop에 1을 더해준다. 처음엔 -1을 가리키므로, 1을 더한 0의 자리에 저장한다
 	DFStack[StackTop] = x;
 }
 
-int Pop()
+int Pop() //Stack에  있는 값을 꺼내는 것!
 {
-	if (StackTop == -1)
+	if (StackTop == -1)	//만약 top이 -1을 가리키면 스택은 빈 상황이다!
 	{
-		printf("Stack is FULL!\n");
+		printf("Stack is empty!\n");
 		return 0;
 	}
-	StackTop--;
-	return DFStack[StackTop];
+	return DFStack[StackTop--]; //Pop을 하면 top에 있는 값을 받아오고, top의 값은 -1이 이루어진다.
 }
 
-int isEmpty(LQ *lq)
+Queue* createQueue()
 {
-	if(lq->front == NULL)	//lq->front가 NULL이면 비었다는 것을 1을 리턴해서 알 수 있다
-	{
-		//printf("Queue is empty!\n");
-		return 1;
+	Queue* newQueue = (Queue*)malloc(sizeof(Queue));
+	newQueue->front = 0;
+	newQueue->rear = 0;
+	return newQueue;
+}
+
+void enQueue(Queue* queue, int data)
+{
+	if(isFull(queue)){
+		return;
 	}
 	else
-		return 0;	//그 외의 경우는 0을 리턴
-}
-
-void enQueue(LQ *lq, int key)
-{
-	QNode *newNode = (QNode*)malloc(sizeof(QNode));
-	newNode->data = key;
-	newNode->link = NULL;
-
-	if(lq->front == NULL)	//만약 lq에 연결된 값이 없는 경우
 	{
-		lq->front = newNode;	//front가 newNode를 가리킨다. front가 newNode를 가리키는 이유는 deQueue에서 확인 가능
-		lq->rear = newNode;	//rear도 newone를 가리킨다
+		queue->rear = (queue->rear+1) % MAX_VERTEX;
+		queue->Q[queue->rear] = data;
 	}
-	else	//만약 front에 값이 있으면
-	{
-		lq->rear->link = newNode; //우선 rear->link가 newNode를 가리키고
-		lq->rear = newNode;	//rear의 위치를 옮긴다
-	}
-
+	return;
 }
-
-int deQueue(LQ *lq)
+int deQueue(Queue * queue)
 {
-	QNode *location = lq->front;	//front의 값을 빼야하니 location으로 위치를 잡는다
-	int key;
-	if(isEmpty(lq))	//만약 queue가 비었으면 값을 뺄 수 없음
+	int item = 0;
+	if(isEmpty(queue)){
 		return 0;
-	else //비지 않았다면
+	}
+	else
 	{
-		key = location->data;	//location의 값을 key에 저장
-		lq->front = lq->front->link;	//값을 삭제하면 front는 1 증가하기에  front의 위치를 옮겨준다
-		if(lq->front == NULL)	//만약 옮긴 front가 NULL이라면, 더 이상 가리킬게 없다는 뜻이다. 이게 마지막 값이라는 의미
-			lq->rear = NULL;	//rear가 NULL을 가리키게한다
-		free(location);	//그리고 location을 동적 해제 하고
-		return key;	//key값을 반환한다.
+		item = queue->Q[queue->front];
+		queue->front = (queue->front+1) % MAX_VERTEX;
+		return item;
 	}
 }
 
+int isEmpty(Queue * queue)
+{
+	if(queue->front == queue->rear)
+	{
+		return 1;
+	}
+	else return 0;
+}
 
-
-
+int isFull(Queue * queue)
+{
+	if((queue->rear+1)%MAX_VERTEX == queue->front)
+	{
+		return 1;
+	}
+	else return 0;
+}
 
 
