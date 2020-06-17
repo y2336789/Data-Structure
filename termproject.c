@@ -17,8 +17,8 @@ int visited[MAX_VERTEX]={0,};	//그래프에서 vertex들을 방문했는지 값
 int Svisited[MAX_VERTEX]={0,};	//depthFS에서 어떤 vertex를 방문했는지 기록한다, visit flag
 int Qvisited[MAX_VERTEX]={0,};	//breadthFS에서 어떤 vertex를 방문했는지 기록한다
 
-int DFStack[MAX_VERTEX]= {0,};
-int StackTop = -1;
+int DFStack[MAX_VERTEX]= {0,}; //dfs에서 쓰이는 자료구조 Stack
+int StackTop = -1; //자료구조 stack에서 쓰이는 Top, top의 값을 수정함으로 push 및 pop이 이뤄진다.
 
 typedef struct queue{
 	int Q[MAX_VERTEX];
@@ -406,7 +406,7 @@ void deleteEdge(Graph* aGraph, int fromV, int toV)	//fromV와 toV에 연결된 �
 
 void depthFS(Graph* aGraph, int v)	//깊이 우선 탐색이다
 {
-	Vertex* w;
+	Vertex* w; //aGraph->vlist[a]에 연결된 각각 Vertex에 접근하는 w
 	int a;
 	Svisited[v] = TRUE;	//우선 기준 값인 v에 대해 visited flag를 표기한다
 	Push(v);	//표기 한 후에 v의 값을 스택에 push한다
@@ -429,40 +429,40 @@ void depthFS(Graph* aGraph, int v)	//깊이 우선 탐색이다
 			Pop();	//옮겨도 옮겨도 찾을 수 없다면 스택에서 값을 pop
 			v = DFStack[StackTop];
 	}
-	for(a=0;a<MAX_VERTEX; a++)
+	for(a=0;a<MAX_VERTEX; a++) //dfs가 이뤄지고 Svisited를 전부 0으로 바꿔주었습니다.
 	{
-		Svisited[a]=0;
+		Svisited[a]=0;	// 값의 변경 후 다시 dfs를 호출 할 수 있기 때문에
 	}
-	StackTop = -1;
+	StackTop = -1;	//StackTop도 -1로 만들어져도, 추후에 stack에 push하게 되더라도 기존에 있던 값은 신경 쓸 필요가 없음.
 
 	return;
 }
 
 void breadthFS(Graph* aGraph, int v) //너비 우선 탐색이다
 {
-	Queue * queue = createQueue();
+	Queue * queue = createQueue(); //creatQueue함수로 큐에 대한 값들을 설정해준다(front, rear 등).
 	Vertex* w;
 	int i;
-	enQueue(queue, v);
-	Qvisited[v] = TRUE;
-	printf("%d", v);
+	enQueue(queue, v); //처음 실행하는 값을 queue에 집어 넣는다
+	Qvisited[v] = TRUE;	//집어넣은 값에 대해 visit flag를 TRUE로 바꿔주고
+	printf("%d", v);	//값을 출력한다
 
-	while(!isEmpty(queue))
+	while(!isEmpty(queue))	//만약 queue가 비지 않았다면
 	{
-		v = deQueue(queue);
-		for(w=aGraph->vlist[v].head; w; w = w->link)
+		v = deQueue(queue);	//queue에서 값을 빼온다.
+		for(w=aGraph->vlist[v].head; w; w = w->link)	//w으로 vlist[v]에 연결된 Vertex에 접근한다
 		{
-			if(Qvisited[w->num] == 0){
-				printf("->%d",w->num);
-				enQueue(queue,w->num);
-				Qvisited[w->num] = TRUE;
+			if(Qvisited[w->num] == 0){	//만약 접근한 w->num에 대해 Qvisited의 visit flag가 0일때
+				printf("->%d",w->num);	//해당 값을 출력하고
+				enQueue(queue,w->num);	//값을 queue에 집어 넣는다
+				Qvisited[w->num] = TRUE;	//마지막으로는 visit flag를 TRUE로 바꿔준다
 			}
 		}
 	}
 
-	for(i=0; i<MAX_VERTEX; i++)
+	for(i=0; i<MAX_VERTEX; i++)	//모든 값을 출력시 Qvisited를 전부 0으로 바꿔준다.
 	{
-		Qvisited[i] = 0;
+		Qvisited[i] = 0;	//값의 변경후 다시 bfs를 실행 할 수 있기 때문
 	}
 	return;
 }
@@ -524,50 +524,50 @@ int Pop() //Stack에  있는 값을 꺼내는 것!
 
 Queue* createQueue()
 {
-	Queue* newQueue = (Queue*)malloc(sizeof(Queue));
-	newQueue->front = 0;
+	Queue* newQueue = (Queue*)malloc(sizeof(Queue));	 //동적할당 해주었다.
+	newQueue->front = 0; //front와 rear를 각각 0으로 초기화 해주었다.
 	newQueue->rear = 0;
-	return newQueue;
+	return newQueue; //반환형이 Queue 포인터이니 주소를 반환한다.
 }
 
-void enQueue(Queue* queue, int data)
+void enQueue(Queue* queue, int data) //큐에 값을 집어넣는 함수
 {
-	if(isFull(queue)){
+	if(isFull(queue)){	//큐가 꽉찻으면 종료
 		return;
 	}
-	else
+	else	//비어있다면
 	{
-		queue->rear = (queue->rear+1) % MAX_VERTEX;
-		queue->Q[queue->rear] = data;
+		queue->rear = (queue->rear+1) % MAX_VERTEX; //rear의 값에 1을 더해 바뀐 위치에
+		queue->Q[queue->rear] = data;	//data를 저장한다
 	}
 	return;
 }
-int deQueue(Queue * queue)
+int deQueue(Queue * queue) //큐에 있는 값을 빼내는 함수
 {
 	int item = 0;
-	if(isEmpty(queue)){
+	if(isEmpty(queue)){ //큐가 비었다면 종료
 		return 0;
 	}
 	else
 	{
-		item = queue->Q[queue->front];
-		queue->front = (queue->front+1) % MAX_VERTEX;
-		return item;
+		item = queue->Q[queue->front];	//빼낼 값을 우선 저장해 놓고
+		queue->front = (queue->front+1) % MAX_VERTEX;	//front의 위치를 1칸 옮긴 후에
+		return item; //item을 반환한다.
 	}
 }
 
-int isEmpty(Queue * queue)
+int isEmpty(Queue * queue) //큐가 비었는지 확인해주는 함수
 {
-	if(queue->front == queue->rear)
+	if(queue->front == queue->rear) //front와 rear가 같으면 큐가 비어있는 것이다
 	{
 		return 1;
 	}
 	else return 0;
 }
 
-int isFull(Queue * queue)
+int isFull(Queue * queue) //큐가 꽉 찼는지 확인해주는 함수
 {
-	if((queue->rear+1)%MAX_VERTEX == queue->front)
+	if((queue->rear+1)%MAX_VERTEX == queue->front)	//rear+1의 값이 front와 같으면 큐는 꽉찬것이다
 	{
 		return 1;
 	}
