@@ -313,6 +313,11 @@ void deleteEdge(Graph* aGraph, int fromV, int toV)	//fromV와 toV에 연결된 �
 		printf("해당 vertex들은 연결되어 있지 않습니다.\n");
 		return;
 	}
+	if(flocation == NULL)
+	{
+		printf("해당 edge가 존재하지 않습니다.\n");
+		return;
+	}
 	if(flocation->num == toV) //만약 flocation->num이 toV와 일치하면
 	{
 		if(flocation->link == NULL)	//flocation->link가 NULL일 때
